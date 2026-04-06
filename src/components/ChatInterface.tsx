@@ -149,7 +149,9 @@ export default function ChatInterface({ onComplete }: ChatInterfaceProps) {
 
   return (
     <div className="flex flex-col h-full bg-white">
-      <ProgressBar filled={progress.filled} total={progress.total} />
+      <div className="sticky top-0 z-40">
+        <ProgressBar filled={progress.filled} total={progress.total} />
+      </div>
 
       {/* Messages area */}
       <div className="flex-1 overflow-y-auto px-4 py-5">
