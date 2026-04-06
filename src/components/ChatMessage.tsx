@@ -4,49 +4,62 @@ import { ChatMessage as ChatMessageType } from "@/types";
 
 interface ChatMessageProps {
   message: ChatMessageType;
+  timestamp?: string;
 }
 
-export default function ChatMessage({ message }: ChatMessageProps) {
+function GradientDiamond() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 28 28" fill="none" className="flex-shrink-0">
+      <defs>
+        <linearGradient id="msg-diamond" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stopColor="#f9a8d4" />
+          <stop offset="50%" stopColor="#f472b6" />
+          <stop offset="100%" stopColor="#ef4444" />
+        </linearGradient>
+      </defs>
+      <path d="M14 2L26 14L14 26L2 14L14 2Z" fill="url(#msg-diamond)" />
+    </svg>
+  );
+}
+
+export default function ChatMessage({ message, timestamp }: ChatMessageProps) {
   const isUser = message.role === "user";
 
   return (
     <div
-      className={`flex ${isUser ? "justify-start" : "justify-end"} mb-3 fade-in-up`}
+      className={`flex flex-col ${isUser ? "items-end" : "items-start"} mb-4 fade-in-up`}
     >
+      {/* Bot diamond icon */}
+      {!isUser && (
+        <div className="mb-1 mr-1">
+          <GradientDiamond />
+        </div>
+      )}
+
+      {/* Message bubble */}
       <div
-        className={`flex items-end gap-2 max-w-[80%] ${
-          isUser ? "flex-row" : "flex-row-reverse"
+        className={`px-4 py-2.5 leading-relaxed whitespace-pre-wrap text-[14px] max-w-[80%] ${
+          isUser
+            ? "bg-poalim-grayBg text-poalim-black rounded-2xl rounded-tl-sm"
+            : "text-poalim-gray rounded-2xl"
         }`}
       >
-        {/* Avatar */}
-        <div
-          className={`w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0 text-[11px] font-bold ${
-            isUser
-              ? "bg-poalim-grayBg text-poalim-gray border border-poalim-border"
-              : "bg-poalim-red text-white"
-          }`}
-        >
-          {isUser ? (
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
-              <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" />
-            </svg>
-          ) : (
-            <svg width="13" height="13" viewBox="0 0 28 28" fill="white">
-              <path d="M14 4L24 14L14 24L4 14L14 4Z" />
-            </svg>
-          )}
-        </div>
-        {/* Message bubble */}
-        <div
-          className={`px-4 py-2.5 leading-relaxed whitespace-pre-wrap text-[14px] ${
-            isUser
-              ? "bg-poalim-grayBg text-poalim-black rounded-2xl rounded-br-sm border border-poalim-borderLight"
-              : "bg-white text-poalim-black rounded-2xl rounded-bl-sm border border-poalim-border shadow-sm"
-          }`}
-        >
-          {message.content}
-        </div>
+        {message.content}
       </div>
+
+      {/* Timestamp */}
+      {timestamp && (
+        <div
+          className={`flex items-center gap-1 mt-1 ${
+            isUser ? "pl-1" : "pr-1"
+          }`}
+        >
+          <span className="text-[11px] text-gray-400">
+            {timestamp}
+            {!isUser && " • פועלים משכנתאות"}
+          </span>
+        </div>
+      )}
     </div>
   );
 }

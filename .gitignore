@@ -6,3 +6,4 @@ out/
 *.csv
 data/
 .DS_Store
+.vercel

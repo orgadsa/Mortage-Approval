@@ -1,5 +1,6 @@
+export const maxDuration = 60;
+
 import { NextRequest, NextResponse } from "next/server";
-import Anthropic from "@anthropic-ai/sdk";
 import {
   MortgageApplication,
   ChatMessage,
@@ -15,22 +16,63 @@ import { calculateProgress } from "@/lib/mortgage-fields";
 
 const ALL_TOOLS = [TOOL_DEFINITION, QUICK_REPLIES_TOOL];
 
+interface AnthropicContentBlock {
+  type: "text" | "tool_use";
+  text?: string;
+  id?: string;
+  name?: string;
+  input?: Record<string, unknown>;
+}
+
+interface AnthropicResponse {
+  content: AnthropicContentBlock[];
+}
+
+async function callClaude(
+  apiKey: string,
+  system: string,
+  messages: { role: string; content: unknown }[],
+): Promise<AnthropicResponse> {
+  const res = await fetch("https://api.anthropic.com/v1/messages", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "x-api-key": apiKey,
+      "anthropic-version": "2023-06-01",
+    },
+    body: JSON.stringify({
+      model: "claude-sonnet-4-20250514",
+      max_tokens: 2048,
+      system,
+      messages,
+      tools: ALL_TOOLS,
+    }),
+  });
+
+  if (!res.ok) {
+    const errorBody = await res.text();
+    throw new Error(`Anthropic API error ${res.status}: ${errorBody}`);
+  }
+
+  return res.json();
+}
+
 function processContentBlocks(
-  blocks: Anthropic.Messages.ContentBlock[],
+  blocks: AnthropicContentBlock[],
   extractedFields: Partial<MortgageApplication>,
   quickReplies: QuickReply[]
 ): {
   text: string;
   fields: Partial<MortgageApplication>;
   replies: QuickReply[];
-  toolUseBlocks: Anthropic.Messages.ToolUseBlock[];
+  toolUseBlocks: AnthropicContentBlock[];
 } {
   let text = "";
-  const toolUseBlocks: Anthropic.Messages.ToolUseBlock[] = [];
+  const toolUseBlocks: AnthropicContentBlock[] = [];
 
   for (const block of blocks) {
     if (block.type === "text") {
-      text += block.text;
+      text += block.text || "";
     } else if (block.type === "tool_use") {
       toolUseBlocks.push(block);
       if (block.name === "update_application_data") {
@@ -63,8 +105,6 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const anthropic = new Anthropic({ apiKey });
-
     const body = await request.json();
     const {
       messages,
@@ -85,13 +125,7 @@ export async function POST(request: NextRequest) {
       content: msg.content,
     }));
 
-    const response = await anthropic.messages.create({
-      model: "claude-sonnet-4-20250514",
-      max_tokens: 2048,
-      system: systemPrompt,
-      messages: anthropicMessages,
-      tools: ALL_TOOLS,
-    });
+    const response = await callClaude(apiKey, systemPrompt, anthropicMessages);
 
     let result = processContentBlocks(response.content, {}, []);
     let assistantMessage = result.text;
@@ -102,24 +136,18 @@ export async function POST(request: NextRequest) {
     if (result.toolUseBlocks.length > 0 && !assistantMessage) {
       const toolResults = result.toolUseBlocks.map((block) => ({
         type: "tool_result" as const,
-        tool_use_id: block.id,
+        tool_use_id: block.id!,
         content:
           block.name === "update_application_data"
             ? "הנתונים עודכנו בהצלחה."
             : "הכפתורים יוצגו ללקוח.",
       }));
 
-      const followUp = await anthropic.messages.create({
-        model: "claude-sonnet-4-20250514",
-        max_tokens: 2048,
-        system: systemPrompt,
-        messages: [
-          ...anthropicMessages,
-          { role: "assistant", content: response.content },
-          { role: "user", content: toolResults },
-        ],
-        tools: ALL_TOOLS,
-      });
+      const followUp = await callClaude(apiKey, systemPrompt, [
+        ...anthropicMessages,
+        { role: "assistant", content: response.content },
+        { role: "user", content: toolResults },
+      ]);
 
       const followUpResult = processContentBlocks(
         followUp.content,
@@ -136,26 +164,20 @@ export async function POST(request: NextRequest) {
       if (followUpResult.toolUseBlocks.length > 0 && !assistantMessage) {
         const secondToolResults = followUpResult.toolUseBlocks.map((block) => ({
           type: "tool_result" as const,
-          tool_use_id: block.id,
+          tool_use_id: block.id!,
           content:
             block.name === "update_application_data"
               ? "הנתונים עודכנו בהצלחה."
               : "הכפתורים יוצגו ללקוח.",
         }));
 
-        const secondFollowUp = await anthropic.messages.create({
-          model: "claude-sonnet-4-20250514",
-          max_tokens: 2048,
-          system: systemPrompt,
-          messages: [
-            ...anthropicMessages,
-            { role: "assistant", content: response.content },
-            { role: "user", content: toolResults },
-            { role: "assistant", content: followUp.content },
-            { role: "user", content: secondToolResults },
-          ],
-          tools: ALL_TOOLS,
-        });
+        const secondFollowUp = await callClaude(apiKey, systemPrompt, [
+          ...anthropicMessages,
+          { role: "assistant", content: response.content },
+          { role: "user", content: toolResults },
+          { role: "assistant", content: followUp.content },
+          { role: "user", content: secondToolResults },
+        ]);
 
         const secondResult = processContentBlocks(
           secondFollowUp.content,
@@ -183,7 +205,7 @@ export async function POST(request: NextRequest) {
     };
 
     return NextResponse.json(apiResponse);
-  } catch (error) {
+  } catch (error: unknown) {
     console.error("Chat API error:", error);
     const message =
       error instanceof Error ? error.message : "An unexpected error occurred";

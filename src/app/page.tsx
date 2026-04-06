@@ -23,27 +23,23 @@ export default function Home() {
 
   return (
     <div className="min-h-screen flex flex-col">
-      {/* Header — tight red bar matching Hapoalim style */}
-      <header className="bg-poalim-red shadow-sm">
+      {/* Sticky header */}
+      <header className="bg-poalim-red sticky top-0 z-50 shadow-sm">
         <div className="max-w-4xl mx-auto px-5 py-3 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            {/* Diamond logo mark — Hapoalim's signature shape */}
+            {/* Gradient diamond — matching Danit's icon */}
             <div className="w-9 h-9 flex items-center justify-center">
-              <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
-                <path
-                  d="M14 0L28 14L14 28L0 14L14 0Z"
-                  fill="white"
-                  fillOpacity="0.2"
-                />
-                <path
-                  d="M14 4L24 14L14 24L4 14L14 4Z"
-                  fill="white"
-                  fillOpacity="0.35"
-                />
-                <path
-                  d="M14 8.5L19.5 14L14 19.5L8.5 14L14 8.5Z"
-                  fill="white"
-                />
+              <svg width="30" height="30" viewBox="0 0 30 30" fill="none">
+                <defs>
+                  <linearGradient id="diamond-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" stopColor="#f9a8d4" />
+                    <stop offset="50%" stopColor="#f472b6" />
+                    <stop offset="100%" stopColor="#ef4444" />
+                  </linearGradient>
+                </defs>
+                <path d="M15 1L29 15L15 29L1 15L15 1Z" fill="white" fillOpacity="0.2" />
+                <path d="M15 5L25 15L15 25L5 15L15 5Z" fill="white" fillOpacity="0.4" />
+                <path d="M15 9L21 15L15 21L9 15L15 9Z" fill="white" />
               </svg>
             </div>
             <div className="leading-tight">

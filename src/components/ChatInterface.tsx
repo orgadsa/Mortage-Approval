@@ -16,15 +16,27 @@ interface ChatInterfaceProps {
   onComplete: (data: MortgageApplication) => void;
 }
 
-const WELCOME_MESSAGE: ChatMessageType = {
+interface TimestampedMessage extends ChatMessageType {
+  timestamp: string;
+}
+
+function getTimeString(): string {
+  return new Date().toLocaleTimeString("he-IL", {
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
+
+const WELCOME_MESSAGE: TimestampedMessage = {
   role: "assistant",
   content: `היי! שמח שבחרת בפועלים משכנתאות.
 
 ספר/י לי קצת — מה מביא אותך אלינו היום? מחפש/ת לקנות דירה, לשפר תנאים על משכנתא קיימת, או אולי משהו אחר?`,
+  timestamp: getTimeString(),
 };
 
 export default function ChatInterface({ onComplete }: ChatInterfaceProps) {
-  const [messages, setMessages] = useState<ChatMessageType[]>([WELCOME_MESSAGE]);
+  const [messages, setMessages] = useState<TimestampedMessage[]>([WELCOME_MESSAGE]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [applicationData, setApplicationData] = useState<MortgageApplication>({});
@@ -52,7 +64,11 @@ export default function ChatInterface({ onComplete }: ChatInterfaceProps) {
       const trimmed = text.trim();
       if (!trimmed || isLoading) return;
 
-      const userMessage: ChatMessageType = { role: "user", content: trimmed };
+      const userMessage: TimestampedMessage = {
+        role: "user",
+        content: trimmed,
+        timestamp: getTimeString(),
+      };
       const updatedMessages = [...messages, userMessage];
       setMessages(updatedMessages);
       setInput("");
@@ -94,16 +110,18 @@ export default function ChatInterface({ onComplete }: ChatInterfaceProps) {
           setQuickReplies(chatData.quickReplies);
         }
 
-        const assistantMessage: ChatMessageType = {
+        const assistantMessage: TimestampedMessage = {
           role: "assistant",
           content: chatData.message,
+          timestamp: getTimeString(),
         };
         setMessages((prev) => [...prev, assistantMessage]);
       } catch (err) {
         const errMsg = err instanceof Error ? err.message : "שגיאה לא צפויה";
-        const errorMessage: ChatMessageType = {
+        const errorMessage: TimestampedMessage = {
           role: "assistant",
           content: `מצטער, אירעה שגיאה: ${errMsg}\n\nאנא נסה שוב.`,
+          timestamp: getTimeString(),
         };
         setMessages((prev) => [...prev, errorMessage]);
       } finally {
@@ -130,13 +148,13 @@ export default function ChatInterface({ onComplete }: ChatInterfaceProps) {
   };
 
   return (
-    <div className="flex flex-col h-full bg-poalim-grayBg">
+    <div className="flex flex-col h-full bg-white">
       <ProgressBar filled={progress.filled} total={progress.total} />
 
       {/* Messages area */}
       <div className="flex-1 overflow-y-auto px-4 py-5">
         {messages.map((msg, i) => (
-          <ChatMessage key={i} message={msg} />
+          <ChatMessage key={i} message={msg} timestamp={msg.timestamp} />
         ))}
         {isLoading && <TypingIndicator />}
         {!isLoading && quickReplies.length > 0 && (
