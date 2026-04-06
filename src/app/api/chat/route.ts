@@ -28,10 +28,21 @@ interface AnthropicResponse {
   content: AnthropicContentBlock[];
 }
 
+const MAX_HISTORY_MESSAGES = 20;
+
+function trimHistory(messages: { role: string; content: unknown }[]) {
+  if (messages.length <= MAX_HISTORY_MESSAGES) return messages;
+  // Always keep the last N messages, ensuring we start with a user message
+  const trimmed = messages.slice(-MAX_HISTORY_MESSAGES);
+  const firstUserIdx = trimmed.findIndex((m) => m.role === "user");
+  return firstUserIdx > 0 ? trimmed.slice(firstUserIdx) : trimmed;
+}
+
 async function callClaude(
   apiKey: string,
   system: string,
   messages: { role: string; content: unknown }[],
+  retries = 2,
 ): Promise<AnthropicResponse> {
   const res = await fetch("https://api.anthropic.com/v1/messages", {
     method: "POST",
@@ -42,15 +53,25 @@ async function callClaude(
     },
     body: JSON.stringify({
       model: "claude-sonnet-4-20250514",
-      max_tokens: 2048,
+      max_tokens: 1024,
       system,
       messages,
       tools: ALL_TOOLS,
     }),
   });
 
+  if (res.status === 429 && retries > 0) {
+    const retryAfter = res.headers.get("retry-after");
+    const waitMs = retryAfter ? parseInt(retryAfter) * 1000 : 5000;
+    await new Promise((resolve) => setTimeout(resolve, waitMs));
+    return callClaude(apiKey, system, messages, retries - 1);
+  }
+
   if (!res.ok) {
     const errorBody = await res.text();
+    if (res.status === 429) {
+      throw new Error("הבקשה נחסמה בגלל עומס. אנא המתן מספר שניות ונסה שוב.");
+    }
     throw new Error(`Anthropic API error ${res.status}: ${errorBody}`);
   }
 
@@ -120,10 +141,12 @@ export async function POST(request: NextRequest) {
 
     const systemPrompt = buildSystemPrompt(currentData || {});
 
-    const anthropicMessages = messages.map((msg: ChatMessage) => ({
-      role: msg.role as "user" | "assistant",
-      content: msg.content,
-    }));
+    const anthropicMessages = trimHistory(
+      messages.map((msg: ChatMessage) => ({
+        role: msg.role as "user" | "assistant",
+        content: msg.content,
+      }))
+    );
 
     const response = await callClaude(apiKey, systemPrompt, anthropicMessages);
 
