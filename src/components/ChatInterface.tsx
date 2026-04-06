@@ -206,7 +206,7 @@ export default function ChatInterface({ onComplete }: ChatInterfaceProps) {
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={handleKeyDown}
-            placeholder="הקלד/י הודעה..."
+            placeholder={quickReplies.length > 0 ? "ניתן גם להקליד תשובה חופשית..." : "הקלד/י הודעה..."}
             rows={1}
             className="flex-1 resize-none border border-poalim-border rounded-xl px-4 py-2.5
               focus:ring-2 focus:ring-poalim-red/20 focus:border-poalim-red
