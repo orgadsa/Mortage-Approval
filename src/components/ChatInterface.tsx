@@ -148,13 +148,11 @@ export default function ChatInterface({ onComplete }: ChatInterfaceProps) {
   };
 
   return (
-    <div className="flex flex-col h-full bg-white">
-      <div className="sticky top-0 z-40">
-        <ProgressBar filled={progress.filled} total={progress.total} />
-      </div>
+    <div className="flex flex-col h-full min-h-0 bg-white">
+      <ProgressBar filled={progress.filled} total={progress.total} />
 
       {/* Messages area */}
-      <div className="flex-1 overflow-y-auto px-4 py-5">
+      <div className="flex-1 overflow-y-auto min-h-0 px-4 py-5">
         {messages.map((msg, i) => (
           <ChatMessage key={i} message={msg} timestamp={msg.timestamp} />
         ))}

@@ -22,7 +22,7 @@ export default function Home() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className="h-screen flex flex-col overflow-hidden">
       {/* Sticky header */}
       <header className="bg-poalim-red sticky top-0 z-50 shadow-sm">
         <div className="max-w-4xl mx-auto px-5 py-3 flex items-center justify-between">
@@ -55,7 +55,7 @@ export default function Home() {
       </header>
 
       {/* Main Content */}
-      <main className="flex-1 flex flex-col max-w-4xl mx-auto w-full bg-white shadow-lg border-x border-poalim-border">
+      <main className="flex-1 flex flex-col max-w-4xl mx-auto w-full bg-white shadow-lg border-x border-poalim-border min-h-0">
         {screen === "chat" ? (
           <ChatInterface onComplete={handleComplete} />
         ) : (
