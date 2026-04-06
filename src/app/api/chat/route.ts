@@ -113,6 +113,162 @@ function processContentBlocks(
   return { text, fields: extractedFields, replies: quickReplies, toolUseBlocks };
 }
 
+const CLOSED_QUESTION_PATTERNS: {
+  patterns: RegExp[];
+  replies: QuickReply[];
+}[] = [
+  {
+    patterns: [/סוג (ה)?דירה/, /סוג (ה)?נכס/, /איזה סוג/, /דירה.*(חדשה|יד שנ|קבלן)/],
+    replies: [
+      { label: "דירה חדשה מקבלן", value: "דירה חדשה מקבלן" },
+      { label: "דירת יד שנייה", value: "דירת יד שנייה" },
+      { label: "מחיר למשתכן", value: "מחיר למשתכן" },
+    ],
+  },
+  {
+    patterns: [/ייעוד/, /דירה (יחידה|חליפית|להשקעה)/, /מטרת (ה)?רכישה/, /למה (ה)?דירה/],
+    replies: [
+      { label: "דירה יחידה / עיקרית", value: "דירה יחידה" },
+      { label: "דירה חליפית", value: "דירה חליפית" },
+      { label: "דירה להשקעה", value: "דירה להשקעה" },
+    ],
+  },
+  {
+    patterns: [/מצב משפחתי/, /מצבך המשפחתי/],
+    replies: [
+      { label: "רווק/ה", value: "רווק" },
+      { label: "נשוי/אה", value: "נשוי" },
+      { label: "גרוש/ה", value: "גרוש" },
+      { label: "אלמן/ה", value: "אלמן" },
+      { label: "ידוע/ה בציבור", value: "ידוע בציבור" },
+    ],
+  },
+  {
+    patterns: [/מין\b/, /זכר או נקבה/, /גבר או אישה/],
+    replies: [
+      { label: "זכר", value: "זכר" },
+      { label: "נקבה", value: "נקבה" },
+    ],
+  },
+  {
+    patterns: [/סוג (ה)?העסקה/, /סוג (ה)?תעסוקה/, /שכיר.*(עצמאי|בעל חברה)/, /עצמאי.*שכיר/],
+    replies: [
+      { label: "שכיר/ה", value: "שכיר" },
+      { label: "עצמאי/ת", value: "עצמאי" },
+      { label: "שכיר/ה בעל/ת חברה", value: "שכיר בעל חברה" },
+    ],
+  },
+  {
+    patterns: [/מתי.*(צריכ|תצטרכ|דרוש).*(כסף|הכספים|סכום|משכנתא)/, /מתי.*(ביצוע|קבלת|העברת)/],
+    replies: [
+      { label: "עד חודש", value: "עד חודש" },
+      { label: "עד 3 חודשים", value: "עד 3 חודשים" },
+      { label: "מעל 3 חודשים", value: "מעל 3 חודשים" },
+    ],
+  },
+  {
+    patterns: [/חוזה.*(נחתם|חתום|חתמת)/, /חתמת.*חוזה/],
+    replies: [
+      { label: "כן", value: "כן" },
+      { label: "לא", value: "לא" },
+    ],
+  },
+  {
+    patterns: [/לווים נוספים/, /לווה נוסף/],
+    replies: [
+      { label: "כן", value: "כן" },
+      { label: "לא", value: "לא" },
+    ],
+  },
+  {
+    patterns: [/ילדים.*מתחת/, /ילדים.*21/, /יש לך ילדים/],
+    replies: [
+      { label: "כן", value: "כן" },
+      { label: "לא", value: "לא" },
+    ],
+  },
+  {
+    patterns: [/בחזקתך/],
+    replies: [
+      { label: "כן", value: "כן" },
+      { label: "לא", value: "לא" },
+    ],
+  },
+  {
+    patterns: [/אזרחות.*(נוספת|אחרת)/, /תושבות מס/],
+    replies: [
+      { label: "כן", value: "כן" },
+      { label: "לא", value: "לא" },
+    ],
+  },
+  {
+    patterns: [/מקצוע מיוחד/],
+    replies: [
+      { label: "כן", value: "כן" },
+      { label: "לא", value: "לא" },
+    ],
+  },
+  {
+    patterns: [/רישום.*(על שם|בן זוג|בת זוג)/],
+    replies: [
+      { label: "כן", value: "כן" },
+      { label: "לא", value: "לא" },
+    ],
+  },
+  {
+    patterns: [/חופשת לידה/],
+    replies: [
+      { label: "כן", value: "כן" },
+      { label: "לא", value: "לא" },
+    ],
+  },
+  {
+    patterns: [/עבודה נוספת/, /מקור עבודה נוסף/],
+    replies: [
+      { label: "כן", value: "כן" },
+      { label: "לא", value: "לא" },
+    ],
+  },
+  {
+    patterns: [/הכנסות נוספות/, /הכנסה נוספת/],
+    replies: [
+      { label: "כן", value: "כן" },
+      { label: "לא", value: "לא" },
+    ],
+  },
+  {
+    patterns: [/התחייבויות/, /הלוואות/],
+    replies: [
+      { label: "כן, יש לי התחייבויות", value: "כן" },
+      { label: "לא", value: "לא" },
+    ],
+  },
+  {
+    patterns: [/פרטיות/, /מאשר.*מידע.*משכנתא/, /אישור.*פרטיות/],
+    replies: [
+      { label: "אני מאשר/ת", value: "אני מאשר/ת שהמידע ישמש לבחינת בקשת המשכנתא בלבד" },
+    ],
+  },
+  {
+    patterns: [/האם.*(עובד|מועסק|עובדת)/, /עובד.*כרגע/],
+    replies: [
+      { label: "כן", value: "כן" },
+      { label: "לא", value: "לא" },
+    ],
+  },
+];
+
+function detectQuickReplies(text: string): QuickReply[] {
+  for (const entry of CLOSED_QUESTION_PATTERNS) {
+    for (const pattern of entry.patterns) {
+      if (pattern.test(text)) {
+        return entry.replies;
+      }
+    }
+  }
+  return [];
+}
+
 export async function POST(request: NextRequest) {
   try {
     const apiKey = process.env.ANTHROPIC_API_KEY;
@@ -217,6 +373,10 @@ export async function POST(request: NextRequest) {
 
     const mergedData = { ...currentData, ...extractedFields };
     const progress = calculateProgress(mergedData);
+
+    if (quickReplies.length === 0 && assistantMessage) {
+      quickReplies = detectQuickReplies(assistantMessage);
+    }
 
     const apiResponse: ChatApiResponse = {
       message: assistantMessage,
