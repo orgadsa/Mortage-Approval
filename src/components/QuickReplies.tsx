@@ -34,8 +34,11 @@ export default function QuickReplies({
                 text-[14px] font-medium text-poalim-gray text-center
                 transition-all duration-200
                 hover:bg-pink-100 hover:border-pink-300
+                focus:bg-poalim-redLight focus:border-pink-200 focus:outline-none
+                focus-visible:bg-poalim-redLight focus-visible:border-pink-200 focus-visible:outline-none
                 active:scale-[0.98]
-                disabled:opacity-40 disabled:cursor-not-allowed"
+                disabled:opacity-40 disabled:cursor-not-allowed
+                appearance-none"
             >
               {reply.label}
             </button>

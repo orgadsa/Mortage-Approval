@@ -91,31 +91,34 @@ export default function ChatInterface({ onComplete }: ChatInterfaceProps) {
           }),
         });
 
-        const data = await response.json();
+        let raw: Record<string, unknown>;
+        try {
+          raw = await response.json();
+        } catch {
+          throw new Error("שגיאת תקשורת עם השרת. אנא נסה שוב.");
+        }
 
         if (!response.ok) {
-          throw new Error(data.error || "Failed to get response");
+          throw new Error((raw.error as string) || "Failed to get response");
         }
 
-        const chatData = data as ChatApiResponse;
+        const data = raw as unknown as ChatApiResponse;
 
-        if (chatData.updatedFields && Object.keys(chatData.updatedFields).length > 0) {
-          setApplicationData((prev) => ({ ...prev, ...chatData.updatedFields }));
+        if (data.updatedFields && Object.keys(data.updatedFields).length > 0) {
+          setApplicationData((prev) => ({ ...prev, ...data.updatedFields }));
         }
 
-        setProgress({ filled: chatData.progress, total: chatData.totalRequired });
+        setProgress({ filled: data.progress, total: data.totalRequired });
 
-        if (chatData.isComplete) {
+        if (data.isComplete) {
           setIsComplete(true);
         }
 
-        if (chatData.quickReplies && chatData.quickReplies.length > 0) {
-          setQuickReplies(chatData.quickReplies);
-        }
+        setQuickReplies(data.quickReplies ?? []);
 
         const assistantMessage: TimestampedMessage = {
           role: "assistant",
-          content: chatData.message,
+          content: data.message,
           timestamp: getTimeString(),
         };
         setMessages((prev) => [...prev, assistantMessage]);

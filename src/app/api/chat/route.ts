@@ -330,8 +330,8 @@ export async function POST(request: NextRequest) {
     let extractedFields = result.fields;
     let quickReplies = result.replies;
 
-    // If Claude used tools but didn't provide text, do a follow-up
-    if (result.toolUseBlocks.length > 0 && !assistantMessage) {
+    // If Claude used tools, send tool results back to get a proper text response
+    if (result.toolUseBlocks.length > 0) {
       const toolResults = result.toolUseBlocks.map((block) => ({
         type: "tool_result" as const,
         tool_use_id: block.id!,
@@ -350,16 +350,17 @@ export async function POST(request: NextRequest) {
       const followUpResult = processContentBlocks(
         followUp.content,
         extractedFields,
-        quickReplies
+        []
       );
-      assistantMessage += followUpResult.text;
-      extractedFields = followUpResult.fields;
-      if (followUpResult.replies.length > 0) {
-        quickReplies = followUpResult.replies;
+      if (followUpResult.text) {
+        assistantMessage = assistantMessage
+          ? assistantMessage + "\n" + followUpResult.text
+          : followUpResult.text;
       }
+      extractedFields = followUpResult.fields;
+      quickReplies = followUpResult.replies;
 
-      // Handle second-level tool calls if needed
-      if (followUpResult.toolUseBlocks.length > 0 && !assistantMessage) {
+      if (followUpResult.toolUseBlocks.length > 0) {
         const secondToolResults = followUpResult.toolUseBlocks.map((block) => ({
           type: "tool_result" as const,
           tool_use_id: block.id!,
@@ -380,13 +381,15 @@ export async function POST(request: NextRequest) {
         const secondResult = processContentBlocks(
           secondFollowUp.content,
           extractedFields,
-          quickReplies
+          []
         );
-        assistantMessage += secondResult.text;
-        extractedFields = secondResult.fields;
-        if (secondResult.replies.length > 0) {
-          quickReplies = secondResult.replies;
+        if (secondResult.text) {
+          assistantMessage = assistantMessage
+            ? assistantMessage + "\n" + secondResult.text
+            : secondResult.text;
         }
+        extractedFields = secondResult.fields;
+        quickReplies = secondResult.replies;
       }
     }
 
