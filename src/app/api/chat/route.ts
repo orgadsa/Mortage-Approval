@@ -113,12 +113,21 @@ function processContentBlocks(
   return { text, fields: extractedFields, replies: quickReplies, toolUseBlocks };
 }
 
+function extractLastQuestion(text: string): string {
+  const sentences = text.split(/(?<=[?؟\n])/);
+  for (let i = sentences.length - 1; i >= 0; i--) {
+    const s = sentences[i].trim();
+    if (s.includes("?") || s.includes("؟")) return s;
+  }
+  return "";
+}
+
 const CLOSED_QUESTION_PATTERNS: {
   patterns: RegExp[];
   replies: QuickReply[];
 }[] = [
   {
-    patterns: [/סוג (ה)?דירה/, /סוג (ה)?נכס/, /איזה סוג/, /דירה.*(חדשה|יד שנ|קבלן)/],
+    patterns: [/סוג.*(דירה|נכס).*\?/, /איזה סוג.*\?/],
     replies: [
       { label: "דירה חדשה מקבלן", value: "דירה חדשה מקבלן" },
       { label: "דירת יד שנייה", value: "דירת יד שנייה" },
@@ -126,7 +135,7 @@ const CLOSED_QUESTION_PATTERNS: {
     ],
   },
   {
-    patterns: [/ייעוד/, /דירה (יחידה|חליפית|להשקעה)/, /מטרת (ה)?רכישה/, /למה (ה)?דירה/],
+    patterns: [/ייעוד.*\?/, /מטרת.*(רכישה|דירה).*\?/, /למה.*(דירה|נכס).*\?/, /מה.*(ייעוד|מטרת).*\?/],
     replies: [
       { label: "דירה יחידה / עיקרית", value: "דירה יחידה" },
       { label: "דירה חליפית", value: "דירה חליפית" },
@@ -134,7 +143,7 @@ const CLOSED_QUESTION_PATTERNS: {
     ],
   },
   {
-    patterns: [/מצב משפחתי/, /מצבך המשפחתי/],
+    patterns: [/מצב.?משפחתי.*\?/, /מצבך המשפחתי.*\?/],
     replies: [
       { label: "רווק/ה", value: "רווק" },
       { label: "נשוי/אה", value: "נשוי" },
@@ -144,14 +153,14 @@ const CLOSED_QUESTION_PATTERNS: {
     ],
   },
   {
-    patterns: [/מין\b/, /זכר או נקבה/, /גבר או אישה/],
+    patterns: [/(מין|מגדר).*\?/, /(זכר|נקבה|גבר|אישה).*\?/],
     replies: [
       { label: "זכר", value: "זכר" },
       { label: "נקבה", value: "נקבה" },
     ],
   },
   {
-    patterns: [/סוג (ה)?העסקה/, /סוג (ה)?תעסוקה/, /שכיר.*(עצמאי|בעל חברה)/, /עצמאי.*שכיר/],
+    patterns: [/סוג.*(העסקה|תעסוקה).*\?/, /(שכיר|עצמאי).*\?/],
     replies: [
       { label: "שכיר/ה", value: "שכיר" },
       { label: "עצמאי/ת", value: "עצמאי" },
@@ -159,7 +168,7 @@ const CLOSED_QUESTION_PATTERNS: {
     ],
   },
   {
-    patterns: [/מתי.*(צריכ|תצטרכ|דרוש).*(כסף|הכספים|סכום|משכנתא)/, /מתי.*(ביצוע|קבלת|העברת)/],
+    patterns: [/מתי.*(צריכ|תצטרכ|דרוש|רוצ).*(כסף|סכום|משכנתא|ביצוע).*\?/],
     replies: [
       { label: "עד חודש", value: "עד חודש" },
       { label: "עד 3 חודשים", value: "עד 3 חודשים" },
@@ -167,90 +176,97 @@ const CLOSED_QUESTION_PATTERNS: {
     ],
   },
   {
-    patterns: [/חוזה.*(נחתם|חתום|חתמת)/, /חתמת.*חוזה/],
+    patterns: [/חוזה.*(נחתם|חתום|חתמת).*\?/, /חתמת.*חוזה.*\?/],
     replies: [
       { label: "כן", value: "כן" },
       { label: "לא", value: "לא" },
     ],
   },
   {
-    patterns: [/לווים נוספים/, /לווה נוסף/],
+    patterns: [/לווים נוספים.*\?/, /לווה נוסף.*\?/],
     replies: [
       { label: "כן", value: "כן" },
       { label: "לא", value: "לא" },
     ],
   },
   {
-    patterns: [/ילדים.*מתחת/, /ילדים.*21/, /יש לך ילדים/],
+    patterns: [/ילדים.*(מתחת|21).*\?/, /יש ל.? ילדים.*\?/],
     replies: [
       { label: "כן", value: "כן" },
       { label: "לא", value: "לא" },
     ],
   },
   {
-    patterns: [/בחזקתך/],
+    patterns: [/בחזקתך.*\?/],
     replies: [
       { label: "כן", value: "כן" },
       { label: "לא", value: "לא" },
     ],
   },
   {
-    patterns: [/אזרחות.*(נוספת|אחרת)/, /תושבות מס/],
+    patterns: [/אזרחות.*(נוספת|אחרת).*\?/, /תושבות מס.*\?/],
     replies: [
       { label: "כן", value: "כן" },
       { label: "לא", value: "לא" },
     ],
   },
   {
-    patterns: [/מקצוע מיוחד/],
+    patterns: [/מקצוע מיוחד.*\?/],
     replies: [
       { label: "כן", value: "כן" },
       { label: "לא", value: "לא" },
     ],
   },
   {
-    patterns: [/רישום.*(על שם|בן זוג|בת זוג)/],
+    patterns: [/רישום.*(על שם|בן.?זוג|בת.?זוג).*\?/],
     replies: [
       { label: "כן", value: "כן" },
       { label: "לא", value: "לא" },
     ],
   },
   {
-    patterns: [/חופשת לידה/],
+    patterns: [/חופשת לידה.*\?/],
     replies: [
       { label: "כן", value: "כן" },
       { label: "לא", value: "לא" },
     ],
   },
   {
-    patterns: [/עבודה נוספת/, /מקור עבודה נוסף/],
+    patterns: [/עבודה נוספת.*\?/, /מקור עבודה נוסף.*\?/],
     replies: [
       { label: "כן", value: "כן" },
       { label: "לא", value: "לא" },
     ],
   },
   {
-    patterns: [/הכנסות נוספות/, /הכנסה נוספת/],
+    patterns: [/הכנסו?ת נוספו?ת.*\?/, /הכנסה נוספת.*\?/],
     replies: [
       { label: "כן", value: "כן" },
       { label: "לא", value: "לא" },
     ],
   },
   {
-    patterns: [/התחייבויות/, /הלוואות/],
+    patterns: [/התחייבויו?ת.*\?/, /הלוואו?ת.*\?/],
     replies: [
       { label: "כן, יש לי התחייבויות", value: "כן" },
       { label: "לא", value: "לא" },
     ],
   },
   {
-    patterns: [/פרטיות/, /מאשר.*מידע.*משכנתא/, /אישור.*פרטיות/],
+    patterns: [/פרטיות.*\?/, /מאשר.*מידע.*\?/, /אישור.*פרטיות.*\?/],
     replies: [
       { label: "אני מאשר/ת", value: "אני מאשר/ת שהמידע ישמש לבחינת בקשת המשכנתא בלבד" },
     ],
   },
   {
-    patterns: [/האם.*(עובד|מועסק|עובדת)/, /עובד.*כרגע/],
+    patterns: [/האם.*(עובד|מועסק|עובדת).*\?/, /עובד.*כרגע.*\?/],
+    replies: [
+      { label: "כן", value: "כן" },
+      { label: "לא", value: "לא" },
+    ],
+  },
+  {
+    patterns: [/ילדים.*(לא משותפים|משלו|משלה).*\?/],
     replies: [
       { label: "כן", value: "כן" },
       { label: "לא", value: "לא" },
@@ -259,9 +275,12 @@ const CLOSED_QUESTION_PATTERNS: {
 ];
 
 function detectQuickReplies(text: string): QuickReply[] {
+  const question = extractLastQuestion(text);
+  if (!question) return [];
+
   for (const entry of CLOSED_QUESTION_PATTERNS) {
     for (const pattern of entry.patterns) {
-      if (pattern.test(text)) {
+      if (pattern.test(question)) {
         return entry.replies;
       }
     }

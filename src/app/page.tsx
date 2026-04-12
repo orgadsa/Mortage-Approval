@@ -23,7 +23,7 @@ export default function Home() {
   };
 
   return (
-    <div className="h-screen h-[100dvh] flex flex-col overflow-hidden">
+    <div className="fixed inset-0 flex flex-col">
       {/* Sticky header */}
       <header className="bg-poalim-red sticky top-0 z-50 shadow-sm">
         <div className="max-w-4xl mx-auto px-5 py-3 flex items-center justify-between">

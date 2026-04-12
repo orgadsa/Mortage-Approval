@@ -46,9 +46,12 @@ export default function ChatInterface({ onComplete }: ChatInterfaceProps) {
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
 
   const scrollToBottom = useCallback(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    requestAnimationFrame(() => {
+      messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    });
   }, []);
 
   useEffect(() => {
@@ -57,24 +60,6 @@ export default function ChatInterface({ onComplete }: ChatInterfaceProps) {
 
   useEffect(() => {
     inputRef.current?.focus();
-  }, []);
-
-  useEffect(() => {
-    const viewport = window.visualViewport;
-    if (!viewport) return;
-
-    const handleResize = () => {
-      const offset = window.innerHeight - viewport.height;
-      document.documentElement.style.setProperty("--keyboard-offset", `${offset}px`);
-    };
-
-    viewport.addEventListener("resize", handleResize);
-    viewport.addEventListener("scroll", handleResize);
-    return () => {
-      viewport.removeEventListener("resize", handleResize);
-      viewport.removeEventListener("scroll", handleResize);
-      document.documentElement.style.setProperty("--keyboard-offset", "0px");
-    };
   }, []);
 
   const sendMessage = useCallback(
@@ -166,11 +151,12 @@ export default function ChatInterface({ onComplete }: ChatInterfaceProps) {
   };
 
   return (
-    <div className="flex flex-col h-full min-h-0 bg-white">
-      <ProgressBar filled={progress.filled} total={progress.total} />
+    <div className="flex flex-col flex-1 min-h-0 bg-white">
+      <div className="flex-shrink-0">
+        <ProgressBar filled={progress.filled} total={progress.total} />
+      </div>
 
-      {/* Messages area */}
-      <div className="flex-1 overflow-y-auto min-h-0 px-4 py-5">
+      <div ref={scrollContainerRef} className="flex-1 overflow-y-auto min-h-0 px-4 py-5 overscroll-contain">
         {messages.map((msg, i) => (
           <ChatMessage key={i} message={msg} timestamp={msg.timestamp} />
         ))}
@@ -185,9 +171,8 @@ export default function ChatInterface({ onComplete }: ChatInterfaceProps) {
         <div ref={messagesEndRef} />
       </div>
 
-      {/* Submit button */}
       {isComplete && (
-        <div className="px-4 pb-2">
+        <div className="flex-shrink-0 px-4 pb-2">
           <button
             onClick={handleSubmit}
             className="w-full py-3 bg-poalim-red hover:bg-poalim-redHover text-white font-semibold rounded-xl transition-all active:scale-[0.98] shadow-sm"
@@ -197,13 +182,12 @@ export default function ChatInterface({ onComplete }: ChatInterfaceProps) {
         </div>
       )}
 
-      {/* Input area */}
-      <div className="flex-shrink-0 border-t border-poalim-border bg-white px-4 py-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
-        <div className="flex gap-2.5 items-center">
+      <div className="flex-shrink-0 border-t border-poalim-border bg-white px-3 py-2 pb-[max(0.5rem,env(safe-area-inset-bottom))]">
+        <div className="flex gap-2 items-center">
           <button
             onClick={() => sendMessage(input)}
             disabled={isLoading || !input.trim()}
-            className="flex-shrink-0 w-10 h-10 rounded-full bg-poalim-red text-white flex items-center justify-center
+            className="flex-shrink-0 w-10 h-10 min-w-[40px] rounded-full bg-poalim-red text-white flex items-center justify-center
               hover:bg-poalim-redHover disabled:bg-gray-200 disabled:text-gray-400 disabled:cursor-not-allowed
               transition-colors touch-manipulation"
             aria-label="שלח"
@@ -219,16 +203,16 @@ export default function ChatInterface({ onComplete }: ChatInterfaceProps) {
             </svg>
           </button>
           <input
-            ref={inputRef as React.RefObject<HTMLInputElement>}
+            ref={inputRef}
             type="text"
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={handleKeyDown}
             placeholder={quickReplies.length > 0 ? "ניתן גם להקליד תשובה חופשית..." : "הקלד/י הודעה..."}
-            className="flex-1 border border-poalim-border rounded-xl px-4 py-2.5
+            className="flex-1 min-w-0 border border-poalim-border rounded-xl px-4 py-2.5
               focus:ring-2 focus:ring-poalim-red/20 focus:border-poalim-red
               bg-poalim-grayBg text-poalim-black placeholder-gray-400
-              text-[14px] leading-relaxed transition-colors h-10"
+              text-[16px] leading-relaxed transition-colors h-10"
             enterKeyHint="send"
           />
         </div>

@@ -22,7 +22,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="he" dir="rtl">
-      <body className="bg-poalim-grayBg overflow-hidden h-screen h-[100dvh]">{children}</body>
+      <body className="bg-poalim-grayBg">{children}</body>
     </html>
   );
 }
