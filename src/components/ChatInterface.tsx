@@ -45,7 +45,7 @@ export default function ChatInterface({ onComplete }: ChatInterfaceProps) {
   const [quickReplies, setQuickReplies] = useState<QuickReply[]>([]);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const inputRef = useRef<HTMLTextAreaElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
 
   const scrollToBottom = useCallback(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -57,6 +57,24 @@ export default function ChatInterface({ onComplete }: ChatInterfaceProps) {
 
   useEffect(() => {
     inputRef.current?.focus();
+  }, []);
+
+  useEffect(() => {
+    const viewport = window.visualViewport;
+    if (!viewport) return;
+
+    const handleResize = () => {
+      const offset = window.innerHeight - viewport.height;
+      document.documentElement.style.setProperty("--keyboard-offset", `${offset}px`);
+    };
+
+    viewport.addEventListener("resize", handleResize);
+    viewport.addEventListener("scroll", handleResize);
+    return () => {
+      viewport.removeEventListener("resize", handleResize);
+      viewport.removeEventListener("scroll", handleResize);
+      document.documentElement.style.setProperty("--keyboard-offset", "0px");
+    };
   }, []);
 
   const sendMessage = useCallback(
@@ -180,15 +198,16 @@ export default function ChatInterface({ onComplete }: ChatInterfaceProps) {
       )}
 
       {/* Input area */}
-      <div className="border-t border-poalim-border bg-white px-4 py-3">
-        <div className="flex gap-2.5 items-end">
+      <div className="flex-shrink-0 border-t border-poalim-border bg-white px-4 py-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
+        <div className="flex gap-2.5 items-center">
           <button
             onClick={() => sendMessage(input)}
             disabled={isLoading || !input.trim()}
             className="flex-shrink-0 w-10 h-10 rounded-full bg-poalim-red text-white flex items-center justify-center
               hover:bg-poalim-redHover disabled:bg-gray-200 disabled:text-gray-400 disabled:cursor-not-allowed
-              transition-colors"
+              transition-colors touch-manipulation"
             aria-label="שלח"
+            type="button"
           >
             <svg
               xmlns="http://www.w3.org/2000/svg"
@@ -199,23 +218,18 @@ export default function ChatInterface({ onComplete }: ChatInterfaceProps) {
               <path d="M3.478 2.404a.75.75 0 0 0-.926.941l2.432 7.905H13.5a.75.75 0 0 1 0 1.5H4.984l-2.432 7.905a.75.75 0 0 0 .926.94 60.519 60.519 0 0 0 18.445-8.986.75.75 0 0 0 0-1.218A60.517 60.517 0 0 0 3.478 2.404Z" />
             </svg>
           </button>
-          <textarea
-            ref={inputRef}
+          <input
+            ref={inputRef as React.RefObject<HTMLInputElement>}
+            type="text"
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={handleKeyDown}
             placeholder={quickReplies.length > 0 ? "ניתן גם להקליד תשובה חופשית..." : "הקלד/י הודעה..."}
-            rows={1}
-            className="flex-1 resize-none border border-poalim-border rounded-xl px-4 py-2.5
+            className="flex-1 border border-poalim-border rounded-xl px-4 py-2.5
               focus:ring-2 focus:ring-poalim-red/20 focus:border-poalim-red
               bg-poalim-grayBg text-poalim-black placeholder-gray-400
-              text-[14px] leading-relaxed transition-colors"
-            style={{ maxHeight: "120px", minHeight: "40px" }}
-            onInput={(e) => {
-              const target = e.target as HTMLTextAreaElement;
-              target.style.height = "auto";
-              target.style.height = Math.min(target.scrollHeight, 120) + "px";
-            }}
+              text-[14px] leading-relaxed transition-colors h-10"
+            enterKeyHint="send"
           />
         </div>
       </div>

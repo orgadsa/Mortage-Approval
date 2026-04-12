@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Image from "next/image";
 import { MortgageApplication } from "@/types";
 import ChatInterface from "@/components/ChatInterface";
 import SummaryScreen from "@/components/SummaryScreen";
@@ -22,25 +23,13 @@ export default function Home() {
   };
 
   return (
-    <div className="h-screen flex flex-col overflow-hidden">
+    <div className="h-screen h-[100dvh] flex flex-col overflow-hidden">
       {/* Sticky header */}
       <header className="bg-poalim-red sticky top-0 z-50 shadow-sm">
         <div className="max-w-4xl mx-auto px-5 py-3 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            {/* Gradient diamond — matching Danit's icon */}
             <div className="w-9 h-9 flex items-center justify-center">
-              <svg width="30" height="30" viewBox="0 0 30 30" fill="none">
-                <defs>
-                  <linearGradient id="diamond-grad" x1="0%" y1="0%" x2="100%" y2="100%">
-                    <stop offset="0%" stopColor="#f9a8d4" />
-                    <stop offset="50%" stopColor="#f472b6" />
-                    <stop offset="100%" stopColor="#ef4444" />
-                  </linearGradient>
-                </defs>
-                <path d="M15 1L29 15L15 29L1 15L15 1Z" fill="white" fillOpacity="0.2" />
-                <path d="M15 5L25 15L15 25L5 15L15 5Z" fill="white" fillOpacity="0.4" />
-                <path d="M15 9L21 15L15 21L9 15L15 9Z" fill="white" />
-              </svg>
+              <Image src="/gem-icon.png" alt="" width={32} height={32} />
             </div>
             <div className="leading-tight">
               <h1 className="text-white text-base font-bold">אישור עקרוני</h1>

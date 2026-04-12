@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { MortgageApplication } from "@/types";
-import { saveApplicationToCsv } from "@/lib/csv-store";
+import { saveApplicationToJson } from "@/lib/json-store";
 
 export async function POST(request: NextRequest) {
   try {
@@ -21,7 +21,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const submissionDate = await saveApplicationToCsv(applicationData);
+    const submissionDate = await saveApplicationToJson(applicationData);
 
     return NextResponse.json({
       success: true,

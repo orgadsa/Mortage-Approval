@@ -7,6 +7,14 @@ export const metadata: Metadata = {
     "צ׳אט חכם ליעוץ משכנתא — קבלו המלצות מותאמות אישית והגישו בקשה בקלות",
 };
 
+export const viewport = {
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
+  viewportFit: "cover" as const,
+};
+
 export default function RootLayout({
   children,
 }: {
@@ -14,7 +22,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="he" dir="rtl">
-      <body className="bg-poalim-grayBg min-h-screen">{children}</body>
+      <body className="bg-poalim-grayBg overflow-hidden h-screen h-[100dvh]">{children}</body>
     </html>
   );
 }
